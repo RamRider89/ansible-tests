@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  become: true
+  
+  tasks:
+   - name: Show text
+     command: cat /vagrant/README.md
+     register: command_output
+   - name: Fin del playbook
+     debug: msg="CONTENT = {{command_output.stdout}}"

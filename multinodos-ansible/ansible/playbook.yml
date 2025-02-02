@@ -1,0 +1,59 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Actualizar caché de apt (Todos)
+      apt: update_cache=yes
+
+- hosts: node1
+  become: true
+  tasks:
+    - name: Instalar Apache (Node1)
+      apt: pkg=apache2 state=present
+
+    - name: Asegurar que Apache esté corriendo (Node1)
+      service: name=apache2 state=started
+
+- hosts: node2
+  become: true
+  tasks:
+    - name: Instalar dependencias de Python (Node2)
+      apt: pkg={{ item }} state=present
+      loop:
+        - python3
+        - python3-pip
+        - python3-venv
+
+    - name: Crear directorio para la app (Node2)
+      file:
+        path: /home/vagrant/flask_app
+        state: directory
+        mode: 0755
+
+    # virtual
+    - name: Directorio virtual (Node2)
+      command: python3 -m venv /home/vagrant/flask_app/venv
+
+    - name: Instalar Flask (Node2)
+      pip:
+        name: Flask
+        virtualenv: /home/vagrant/flask_app/venv  # Added virtualenv parameter
+
+    - name: Copiar la app Flask (Node2)
+      copy:
+        src: files/app.py
+        dest: /home/vagrant/flask_app/app.py
+        mode: 0755
+
+    - name: Ejecutar la app Flask (Node2)
+      command: /home/vagrant/flask_app/venv/bin/python /home/vagrant/flask_app/app.py
+      args:
+        chdir: /home/vagrant/flask_app
+      async: 3600
+      poll: 0
+
+- hosts: controlador
+  become: true
+  tasks:
+   - name: Fin del playbook
+     debug: msg="CONTENT = Este es el nodo controlador"
